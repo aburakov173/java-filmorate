@@ -9,8 +9,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.time.LocalDate;
 import java.util.Map;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -18,7 +20,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = ru.yandex.practicum.filmorate.FilmorateApplication.class)
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-
 class FilmControllerTest {
 
     @Autowired
