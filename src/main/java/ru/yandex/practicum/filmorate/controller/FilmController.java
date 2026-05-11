@@ -28,20 +28,47 @@ public class FilmController {
 
     @PostMapping
     public Film add(@Valid @RequestBody Film film) {
-        film.setId(nextFilmId++);
-        films.put(film.getId(), film);
-        log.info("Добавлен новый фильм: {}", film);
+        Film savedFilm = saveFilm(film);
+        log.info("Добавлен новый фильм: {}", savedFilm);
+        return savedFilm;
+    }
+
+    private Film saveFilm(Film film) {
+        assignId(film);
+        storeFilm(film);
         return film;
+    }
+
+    private void assignId(Film film) {
+        film.setId(nextFilmId++);
+    }
+
+    private void storeFilm(Film film) {
+        films.put(film.getId(), film);
     }
 
     @PutMapping
     public Film update(@Valid @RequestBody Film film) {
-        if (!films.containsKey(film.getId())) {
-            log.warn("Попытка обновления несуществующего фильма с id={}", film.getId());
-            throw new ValidationException("Фильм с id=" + film.getId() + " не найден");
+        Film updatedFilm = updateExistingFilm(film);
+        log.info("Фильм с id={} обновлён: {}", film.getId(), updatedFilm);
+        return updatedFilm;
+    }
+
+    private Film updateExistingFilm(Film film) {
+        validateFilmExists((long) film.getId());
+        return saveUpdatedFilm(film);
+    }
+
+    private void validateFilmExists(Long filmId) {
+        if (!films.containsKey(filmId)) {
+            log.warn("Попытка обновления несуществующего фильма с id={}", filmId);
+            throw new ValidationException("Фильм с id=" + filmId + " не найден");
         }
+    }
+
+    private Film saveUpdatedFilm(Film film) {
         films.put(film.getId(), film);
-        log.info("Фильм с id={} обновлён: {}", film.getId(), film);
         return film;
     }
+
 }

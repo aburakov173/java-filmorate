@@ -22,45 +22,89 @@ public class UserController {
 
     @PostMapping
     public User createUser(@Valid @RequestBody User user) {
-        user.setId(++generatedID);
+        User savedUser = processAndSaveUser(user);
+        log.info("Добавлен новый пользователь: {}", savedUser);
+        return savedUser;
+    }
 
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
-
-        users.put((long) user.getId(), user);
-        log.info("Добавлен новый пользователь: {}", user);
+    private User processAndSaveUser(User user) {
+        assignId(user);
+        processUserName(user);
+        storeUser(user);
         return user;
     }
 
+    private void assignId(User user) {
+        user.setId(++generatedID);
+    }
+
+    private void processUserName(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
+    }
+
+    private void storeUser(User user) {
+        users.put((long) user.getId(), user);
+    }
+
+
     @PutMapping
     public User update(@RequestBody User user) {
-        User existingUser = users.get(user.getId());
-        if (existingUser == null) {
-            log.warn("Попытка обновления несуществующего пользователя с id={}", user.getId());
-            throw new ValidationException("Пользователь с id=" + user.getId() + " не найден");
-        }
+        User updatedUser = updateExistingUser(user);
+        log.info("Пользователь с id={} обновлён: {}", user.getId(), updatedUser);
+        return updatedUser;
+    }
 
-        // Обновляем только не‑null поля
+    private User updateExistingUser(User user) {
+        validateUserExists(user.getId());
+        applyUserUpdates(user);
+        return users.get(user.getId());
+    }
+
+    private void validateUserExists(Long userId) {
+        if (users.get(userId) == null) {
+            log.warn("Попытка обновления несуществующего пользователя с id={}", userId);
+            throw new ValidationException("Пользователь с id=" + userId + " не найден");
+        }
+    }
+
+    private void applyUserUpdates(User user) {
+        User existingUser = users.get(user.getId());
+
+        updateEmailIfProvided(user, existingUser);
+        updateLoginIfProvided(user, existingUser);
+        updateNameIfProvided(user, existingUser);
+        updateBirthdayIfProvided(user, existingUser);
+    }
+
+    private void updateEmailIfProvided(User user, User existingUser) {
         if (user.getEmail() != null) {
             existingUser.setEmail(user.getEmail());
         }
+    }
+
+    private void updateLoginIfProvided(User user, User existingUser) {
         if (user.getLogin() != null) {
             existingUser.setLogin(user.getLogin());
         }
+    }
+
+    private void updateNameIfProvided(User user, User existingUser) {
         if (user.getName() != null && !user.getName().isBlank()) {
             existingUser.setName(user.getName());
         } else if (user.getLogin() != null) {
             // Если имя пустое, используем логин
             existingUser.setName(user.getLogin());
         }
+    }
+
+    private void updateBirthdayIfProvided(User user, User existingUser) {
         if (user.getBirthday() != null) {
             existingUser.setBirthday(user.getBirthday());
         }
-
-        log.info("Пользователь с id={} обновлён: {}", user.getId(), existingUser);
-        return existingUser;
     }
+
 
 
     @GetMapping
