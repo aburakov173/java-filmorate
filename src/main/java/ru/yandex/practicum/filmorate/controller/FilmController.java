@@ -28,6 +28,9 @@ public class FilmController {
 
     @PostMapping
     public Film add(@Valid @RequestBody Film film) {
+        if (film == null) {
+            throw new ValidationException("Тело запроса не может быть null");
+        }
         Film savedFilm = saveFilm(film);
         log.info("Добавлен новый фильм: {}", savedFilm);
         return savedFilm;
@@ -49,26 +52,33 @@ public class FilmController {
 
     @PutMapping
     public Film update(@Valid @RequestBody Film film) {
-        Film updatedFilm = updateExistingFilm(film);
-        log.info("Фильм с id={} обновлён: {}", film.getId(), updatedFilm);
-        return updatedFilm;
-    }
+        log.info("Получен PUT запрос на обновление фильма с id={} (из тела запроса)", film.getId());
 
-    private Film updateExistingFilm(Film film) {
-        validateFilmExists((long) film.getId());
-        return saveUpdatedFilm(film);
-    }
+        Integer id = film.getId();
 
-    private void validateFilmExists(Long filmId) {
-        if (!films.containsKey(filmId)) {
-            log.warn("Попытка обновления несуществующего фильма с id={}", filmId);
-            throw new ValidationException("Фильм с id=" + filmId + " не найден");
+        // Проверяем, что ID не null
+        if (id == null) {
+            throw new ValidationException("ID фильма не может быть null");
         }
-    }
 
-    private Film saveUpdatedFilm(Film film) {
-        films.put(film.getId(), film);
+        // Проверяем, существует ли фильм с таким id
+        if (!films.containsKey(id)) {
+            log.warn("Фильм с id={} не найден", id);
+            throw new ValidationException("Фильм с id=" + id + " не найден");
+        }
+
+        // Опциональная проверка: обновлять только если есть изменения
+        Film existingFilm = films.get(id);
+        boolean hasChanges = !existingFilm.equals(film);
+
+        if (hasChanges) {
+            films.put(id, film);
+            log.info("Фильм с id={} был обновлён: {}", id, film);
+        } else {
+            log.info("Фильм с id={} не изменился", id);
+        }
+
+        // Возвращаем обновлённый фильм
         return film;
     }
-
 }
