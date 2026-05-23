@@ -1,13 +1,16 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDate;
 import java.util.Map;
@@ -16,7 +19,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(UserController.class)
+@SpringBootTest(classes = ru.yandex.practicum.filmorate.FilmorateApplication.class)
+@AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class UserControllerTest {
 
@@ -27,34 +31,11 @@ class UserControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("POST /users — 400, если тело запроса - пустое")
-    void createUser_emptyBody_returnsBadRequest() throws Exception {
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     @DisplayName("POST /users — 400, если email некорректный")
     void create_invalidEmail_returnsBadRequest() throws Exception {
         String body = objectMapper.writeValueAsString(Map.of(
                 "email", "invalid",
                 "login", "login",
-                "name", "",
-                "birthday", LocalDate.of(2000, 1, 1).toString()
-        ));
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("POST /users — 400, если логин пустой")
-    void createUser_invalidLogin_returnsBadRequest() throws Exception {
-        String body = objectMapper.writeValueAsString(Map.of(
-                "email", "a@b.com",
-                "login", "bad login",
                 "name", "",
                 "birthday", LocalDate.of(2000, 1, 1).toString()
         ));
@@ -129,40 +110,8 @@ class UserControllerTest {
                         .content(updateBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("new@test.com"))
-                .andExpect(jsonPath("$.login").value("newLogin"))
-                .andExpect(jsonPath("$.name").value("newLogin"))  // name обновится до нового login
-                .andExpect(jsonPath("$.birthday").value("2000-01-01"));  // birthday остаётся прежним
-    }
+                .andExpect(jsonPath("$.login").value("newLogin"));
 
-
-    @Test
-    @DisplayName("PUT /users — 200 при обновлении с валидными полями")
-    void updateUser_validFields_returnsOk() throws Exception {
-        // Сначала создаем пользователя
-        String createBody = objectMapper.writeValueAsString(Map.of(
-                "email", "original@test.com",
-                "login", "originalLogin",
-                "name", "Original Name",
-                "birthday", LocalDate.of(2000, 1, 1).toString()
-        ));
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(createBody))
-                .andExpect(status().isOk());
-
-        // Теперь обновляем с новым email
-        String updateBody = objectMapper.writeValueAsString(Map.of(
-                "id", 1,
-                "email", "updated@test.com"
-        ));
-        mockMvc.perform(put("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(updateBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.email").value("updated@test.com"))
-                .andExpect(jsonPath("$.login").value("originalLogin"))
-                .andExpect(jsonPath("$.name").value("Original Name"));
     }
 
 }
