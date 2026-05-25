@@ -26,7 +26,6 @@ public class User {
     private LocalDate birthday;
     private Set<Integer> friends;
 
-    {
-        this.friends = new HashSet<>();
-    }
+    this.friends =new HashSet<>();
+
 }
